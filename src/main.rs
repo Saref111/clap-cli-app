@@ -1,19 +1,19 @@
+use std::path::PathBuf;
+
 use clap::Parser;
+use pulldown_cmark::{html::push_html, Event, Parser as MDParser};
 
 #[derive(Parser)]
-#[command(name = "CLI-parser")]
-#[command(version, about)]
-#[command(next_line_help = true)]
+#[command(name = "CLI-MD-parser")]
+#[command(version, about, author)]
 struct Cli {
-    #[arg(short, long)]
-    one: Option<String>,
-    #[arg(short, long)]
-    two: String,
+    /// Sets the input file
+    input: PathBuf,
 }
 
 fn main() {
     let cli = Cli::parse();
-
-    println!("One: {:?}", cli.one);
-    println!("Two: {}", cli.two);
+    let file_string = std::fs::read_to_string(cli.input);
+    let file_string = file_string.unwrap();
+    println!("{file_string}");
 }
