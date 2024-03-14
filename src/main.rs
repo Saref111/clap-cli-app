@@ -16,12 +16,11 @@ fn main() {
     let file_string = std::fs::read_to_string(cli.input).expect("Could not read the file");
     let parser = MDParser::new(&file_string);
     let parser_iter: Vec<Event> = parser.into_iter().collect();
-    let parser_events: &Vec<Event> = &parser_iter;
     let mut file_md = String::new();
 
-    parser_events.into_iter().for_each(|evt| {
+    for evt in &parser_iter {
         println!("{:?}", evt);
-    });
+    }
 
     push_html(&mut file_md, parser_iter.into_iter());
 
