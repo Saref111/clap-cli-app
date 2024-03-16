@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use maud::html;
 use pulldown_cmark::{html::push_html, Event, Parser as MDParser};
 
 #[derive(Parser)]
@@ -9,6 +10,35 @@ use pulldown_cmark::{html::push_html, Event, Parser as MDParser};
 struct Cli {
     /// Sets the input file
     input: PathBuf,
+
+    /// Wrap in html
+    #[arg(long, short)]
+    wrap: bool,
+    /// Css path
+    #[arg(long)]
+    css: Option<PathBuf>,
+    /// Print parsing events
+    #[arg(long, short)]
+    event: bool,
+}
+
+fn wrap_html(string: &str, css: Option<&str>) -> String {
+    let res = html! {
+        (maud::DOCTYPE)
+        html {
+            head {
+                meta charset="utf8";
+                @if let Some(s) = css {
+                    link rel="stylesheet" type="text/css" href=(s);
+                }
+            }
+            body {
+                (maud::PreEscaped(string))
+            }
+        }
+    };
+
+    return res.into_string();
 }
 
 fn main() {
@@ -18,11 +48,16 @@ fn main() {
     let parser_iter: Vec<Event> = parser.into_iter().collect();
     let mut file_md = String::new();
 
-    for evt in &parser_iter {
-        println!("{:?}", evt);
+    if cli.event {
+        for evt in &parser_iter {
+            println!("{:?}", evt);
+        }
     }
-
     push_html(&mut file_md, parser_iter.into_iter());
+
+    if cli.wrap {
+        file_md = wrap_html(&file_md, None);
+    }
 
     println!("{file_md}");
 }
