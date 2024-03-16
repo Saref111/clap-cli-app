@@ -1,61 +1,63 @@
-use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+use clap::Parser;
+use maud::html;
+use pulldown_cmark::{html::push_html, Event, Parser as MDParser};
+
 #[derive(Parser)]
-#[command(version = "0", about = "Does", long_about = "Does something")]
+#[command(name = "CLI-MD-parser")]
+#[command(version, about, author)]
 struct Cli {
-    name: Option<String>,
+    /// Sets the input file
+    input: PathBuf,
 
-    #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
-
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    debug: u8,
-
-    #[command(subcommand)]
-    command: Option<Commands>,
+    /// Wrap in html
+    #[arg(long, short)]
+    wrap: bool,
+    /// Css path
+    #[arg(long)]
+    css: Option<String>,
+    /// Print parsing events
+    #[arg(long, short)]
+    event: bool,
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    #[command(about = "Prints the list")]
-    Test {
-        #[arg(short, long)]
-        list: bool,
-    },
+fn wrap_html(string: &str, css: Option<&str>) -> String {
+    let res = html! {
+        (maud::DOCTYPE)
+        html {
+            head {
+                meta charset="utf8";
+                @if let Some(s) = css {
+                    link rel="stylesheet" type="text/css" href=(s);
+                }
+            }
+            body {
+                (maud::PreEscaped(string))
+            }
+        }
+    };
+
+    return res.into_string();
 }
 
 fn main() {
     let cli = Cli::parse();
+    let file_string = std::fs::read_to_string(cli.input).expect("Could not read the file");
+    let parser = MDParser::new(&file_string);
+    let parser_iter: Vec<Event> = parser.into_iter().collect();
+    let mut file_md = String::new();
 
-    // You can check the value provided by positional arguments, or option arguments
-    if let Some(name) = cli.name.as_deref() {
-        println!("Value for name: {name}");
-    }
-
-    if let Some(config_path) = cli.config.as_deref() {
-        println!("Value for config: {}", config_path.display());
-    }
-
-    // You can see how many times a particular flag or argument occurred
-    // Note, only flags can have multiple occurrences
-    match cli.debug {
-        0 => println!("Debug mode is off"),
-        1 => println!("Debug mode is kind of on"),
-        2 => println!("Debug mode is on"),
-        _ => println!("Don't be crazy"),
-    }
-
-    // You can check for the existence of subcommands, and if found use their
-    // matches just as you would the top level cmd
-    match &cli.command {
-        Some(Commands::Test { list }) => {
-            if *list {
-                println!("Printing testing lists...");
-            } else {
-                println!("Not printing testing lists...");
-            }
+    if cli.event {
+        for evt in &parser_iter {
+            println!("{:?}", evt);
         }
-        None => {}
     }
+    push_html(&mut file_md, parser_iter.into_iter());
+
+    if cli.wrap {
+        file_md = wrap_html(&file_md, cli.css.as_deref().map(|s| s));
+    }
+
+    println!("{file_md}");
 }
