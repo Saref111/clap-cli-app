@@ -4,6 +4,9 @@ use clap::Parser;
 use maud::html;
 use pulldown_cmark::{html::push_html, Event, Parser as MDParser};
 
+#[cfg(test)]
+mod test;
+
 #[derive(Parser)]
 #[command(name = "CLI-MD-parser")]
 #[command(version, about, author)]
