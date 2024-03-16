@@ -16,7 +16,7 @@ struct Cli {
     wrap: bool,
     /// Css path
     #[arg(long)]
-    css: Option<PathBuf>,
+    css: Option<String>,
     /// Print parsing events
     #[arg(long, short)]
     event: bool,
@@ -56,7 +56,7 @@ fn main() {
     push_html(&mut file_md, parser_iter.into_iter());
 
     if cli.wrap {
-        file_md = wrap_html(&file_md, None);
+        file_md = wrap_html(&file_md, cli.css.as_deref().map(|s| s));
     }
 
     println!("{file_md}");
